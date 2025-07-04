@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>CDR - Mensajeros del Rey</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <style>
+    body { font-family: sans-serif; background: #eef; margin: 0; padding: 20px; }
+    .container { max-width: 900px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; }
+    h2, h3 { color: #003366; }
+    input, select, button, textarea {
+      display: block;
+      width: 100%;
+      margin: 8px 0;
+      padding: 8px;
+    }
+    button { background: #004aad; color: white; border: none; cursor: pointer; }
+    .card {
+      background: #f3f3f3; padding: 12px; margin-top: 12px; border-radius: 6px;
+    }
+    .row { display: flex; justify-content: space-between; align-items: center; }
+    .small-img { max-width: 100px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const App = () => {
+      const [user, setUser] = useState(JSON.parse(localStorage.getItem('usuario_actual')) || null);
+      const [usuarios, setUsuarios] = useState(JSON.parse(localStorage.getItem('usuarios')) || []);
+      const [clases, setClases] = useState(JSON.parse(localStorage.getItem('clases')) || []);
+
+      const save = (key, data) => localStorage.setItem(key, JSON.stringify(data));
+      const logout = () => { setUser(null); localStorage.removeItem('usuario_actual'); };
+
+      const registrar = e => {
+        e.preventDefault();
+        const f = e.target;
+        const nuevo = {
+          user: f.user.value, pass: f.pass.value, role: f.role.value,
+          edad: f.role.value === "maestro" ? f.edad.value : null
+        };
+        if (usuarios.find(u => u.user === nuevo.user)) return alert("Ya existe ese usuario");
+        const nuevos = [...usuarios, nuevo];
+        setUsuarios(nuevos); save("usuarios", nuevos);
+        alert("Registrado exitosamente");
+        f.reset();
+      };
+
+      const login = e => {
+        e.preventDefault();
+        const f = e.target;
+        const u = usuarios.find(u => u.user === f.user.value && u.pass === f.pass.value);
+        if (!u) return alert("Credenciales incorrectas");
+        setUser(u); save("usuario_actual", u);
+      };
+
+      const crearClase = e => {
+        e.preventDefault();
+        const f = e.target;
+        const nueva = {
+          fecha: f.fecha.value,
+          encargado: f.encargado.value,
+          asistente: f.asistente.value,
+          edad: f.edad.value,
+          tema: "",
+          asistentes: [],
+          comportamiento: "",
+          aprendizaje: "",
+          imagen: ""
+        };
+        const actualizado = [...clases, nueva];
+        setClases(actualizado); save("clases", actualizado);
+        alert("Clase asignada");
+        f.reset();
+      };
+
+      const registrarAsistencia = (clase, f) => {
+        const tema = f.tema.value;
+        const niños = f.niños.value.split(',').map(x => x.trim());
+        const comportamiento = f.comportamiento.value;
+        const aprendizaje = f.aprendizaje.value;
+        const img = f.imagen.files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const nuevas = clases.map(c =>
+            c === clase ? { ...c, tema, asistentes: niños, comportamiento, aprendizaje, imagen: reader.result } : c
+          );
+          setClases(nuevas); save("clases", nuevas);
+          alert("Clase registrada con asistencia");
+          f.reset();
+        };
+        if (img) reader.readAsDataURL(img);
+      };
+
+      if (!user) {
+        return (
+          <div className="container">
+            <h2>CDR - Ingreso</h2>
+            <form onSubmit={registrar}>
+              <h3>Registro</h3>
+              <input name="user" placeholder="Usuario" required />
+              <input name="pass" type="password" placeholder="Contraseña" required />
+              <select name="role">
+                <option value="maestro">Maestro</option>
+                <option value="lider">Líder</option>
+              </select>
+              <select name="edad">
+                <option value="castillo_feliz">Castillo Feliz (5-8)</option>
+                <option value="club_castillo">Club Castillo (9-12)</option>
+              </select>
+              <button>Registrar</button>
+            </form>
+            <form onSubmit={login}>
+              <h3>Login</h3>
+              <input name="user" placeholder="Usuario" required />
+              <input name="pass" type="password" placeholder="Contraseña" required />
+              <button>Entrar</button>
+            </form>
+          </div>
+        );
+      }
+
+      return (
+        <div className="container">
+          <div className="row">
+            <h2>Bienvenido, {user.user} ({user.role})</h2>
+            <button onClick={logout}>Cerrar sesión</button>
+          </div>
+
+          {user.role === "lider" ? (
+            <>
+              <h3>Asignar clase</h3>
+              <form onSubmit={crearClase}>
+                <input name="fecha" type="date" required />
+                <input name="encargado" placeholder="Encargado" required />
+                <input name="asistente" placeholder="Asistente" />
+                <select name="edad">
+                  <option value="castillo_feliz">Castillo Feliz</option>
+                  <option value="club_castillo">Club Castillo</option>
+                </select>
+                <button>Asignar</button>
+              </form>
+
+              <h3>Clases registradas</h3>
+              {clases.map((c, i) => (
+                <div key={i} className="card">
+                  <strong>{c.fecha} - Tema: {c.tema || "(sin registrar)"}</strong><br />
+                  Edad: {c.edad}<br />
+                  Encargado: {c.encargado}<br />
+                  Asistente: {c.asistente}<br />
+                  Asistentes: {c.asistentes?.length || 0}<br />
+                  Comportamiento: {c.comportamiento}<br />
+                  Aprendizaje: {c.aprendizaje}<br />
+                  {c.imagen && <img src={c.imagen} className="small-img" alt="foto" />}
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <h3>Mis clases asignadas</h3>
+              {clases.filter(c => c.encargado === user.user && c.edad === user.edad).map((c, i) => (
+                <div key={i} className="card">
+                  <strong>{c.fecha}</strong>
+                  <form onSubmit={(e) => { e.preventDefault(); registrarAsistencia(c, e.target); }}>
+                    <input name="tema" placeholder="Tema impartido" required />
+                    <input name="niños" placeholder="Niños separados por coma" required />
+                    <input name="comportamiento" placeholder="Comportamiento" />
+                    <input name="aprendizaje" placeholder="Aprendizaje" />
+                    <input name="imagen" type="file" accept="image/*" />
+                    <button>Registrar asistencia</button>
+                  </form>
+                  {c.asistentes.length > 0 && (
+                    <>
+                      <strong>Registrado:</strong><br />
+                      Tema: {c.tema}<br />
+                      Niños: {c.asistentes.join(', ')}<br />
+                      Comportamiento: {c.comportamiento}<br />
+                      Aprendizaje: {c.aprendizaje}<br />
+                      {c.imagen && <img src={c.imagen} className="small-img" alt="foto" />}
+                    </>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
