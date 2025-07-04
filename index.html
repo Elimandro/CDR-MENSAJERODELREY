@@ -20,6 +20,8 @@
 </head>
 <body>
   <div id="root"></div>
+
+  <!-- CÓDIGO EN BABEL -->
   <script type="text/babel">
     const { useState } = React;
 
@@ -92,7 +94,6 @@
         };
         if (file) reader.readAsDataURL(file);
         else {
-          // Si no hay imagen, guardar igual
           const actualizadas = clases.map(cl =>
             cl === c ? { ...cl, tema, asistentes, comportamiento, aprendizaje } : cl
           );
@@ -174,7 +175,7 @@
                   <strong>{c.fecha}</strong> — {c.tema ? `Tema: ${c.tema}` : "Sin tema"}
                   <form onSubmit={e => { e.preventDefault(); registrarClase(c, e.target); }}>
                     <input name="tema" placeholder="Tema impartido" required />
-                    <input name="ninos" placeholder="Nombres de niños (separados por coma)" required />
+                    <input name="ninos" placeholder="Nombres de niños (coma)" required />
                     <input name="comportamiento" placeholder="Comportamiento" />
                     <input name="aprendizaje" placeholder="Aprendizaje" />
                     <input name="imagen" type="file" accept="image/*" />
