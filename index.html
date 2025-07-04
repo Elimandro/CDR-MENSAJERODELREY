@@ -3,33 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <title>CDR - Mensajeros del Rey</title>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
   <style>
-    body { font-family: sans-serif; background: #eef; margin: 0; padding: 20px; }
-    .container { max-width: 900px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; }
-    input, select, button, textarea {
-      display: block;
-      width: 100%;
-      margin: 8px 0;
-      padding: 8px;
+    body { font-family: Arial, sans-serif; background: #eef; margin: 0; padding: 20px; }
+    .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; }
+    input, select, textarea, button {
+      width: 100%; margin: 8px 0; padding: 8px;
     }
-    button { background: #004aad; color: white; border: none; cursor: pointer; }
-    .card {
-      background: #f9f9f9;
-      padding: 12px;
-      margin-top: 12px;
-      border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
+    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    .card { background: #f1f1f1; padding: 12px; border-radius: 6px; margin-top: 12px; }
     .row { display: flex; justify-content: space-between; align-items: center; }
-    .small-img { max-width: 100px; margin-top: 10px; }
+    img.small-img { width: 100px; margin-top: 10px; border-radius: 4px; }
   </style>
 </head>
 <body>
   <div id="root"></div>
-
   <script type="text/babel">
     const { useState } = React;
 
@@ -38,10 +28,10 @@
       const [usuarios, setUsuarios] = useState(JSON.parse(localStorage.getItem("usuarios")) || []);
       const [clases, setClases] = useState(JSON.parse(localStorage.getItem("clases")) || []);
 
-      const guardar = (clave, valor) => localStorage.setItem(clave, JSON.stringify(valor));
+      const guardar = (key, value) => localStorage.setItem(key, JSON.stringify(value));
       const logout = () => { setUser(null); localStorage.removeItem("usuario_actual"); };
 
-      const registrar = e => {
+      const handleRegister = e => {
         e.preventDefault();
         const f = e.target;
         const nuevo = {
@@ -50,25 +40,25 @@
           role: f.role.value,
           edad: f.role.value === "maestro" ? f.edad.value : null
         };
-        if (usuarios.find(u => u.user === nuevo.user)) return alert("Ese usuario ya existe");
+        if (usuarios.find(u => u.user === nuevo.user)) return alert("Usuario ya existe");
         const nuevos = [...usuarios, nuevo];
         setUsuarios(nuevos); guardar("usuarios", nuevos);
-        alert("Usuario registrado");
+        alert("Registrado correctamente");
         f.reset();
       };
 
-      const login = e => {
+      const handleLogin = e => {
         e.preventDefault();
         const f = e.target;
-        const u = usuarios.find(u => u.user === f.user.value && u.pass === f.pass.value);
-        if (!u) return alert("Credenciales inválidas");
-        setUser(u); guardar("usuario_actual", u);
+        const encontrado = usuarios.find(u => u.user === f.user.value && u.pass === f.pass.value);
+        if (!encontrado) return alert("Credenciales incorrectas");
+        setUser(encontrado); guardar("usuario_actual", encontrado);
       };
 
       const asignarClase = e => {
         e.preventDefault();
         const f = e.target;
-        const nueva = {
+        const clase = {
           fecha: f.fecha.value,
           encargado: f.encargado.value,
           asistente: f.asistente.value,
@@ -79,38 +69,45 @@
           aprendizaje: "",
           imagen: ""
         };
-        const nuevas = [...clases, nueva];
+        const nuevas = [...clases, clase];
         setClases(nuevas); guardar("clases", nuevas);
-        alert("Clase asignada");
-        f.reset();
+        f.reset(); alert("Clase asignada");
       };
 
-      const registrarClase = (clase, f) => {
+      const registrarClase = (c, f) => {
         const tema = f.tema.value;
-        const niños = f.niños.value.split(",").map(n => n.trim());
+        const asistentes = f.ninos.value.split(",").map(n => n.trim());
         const comportamiento = f.comportamiento.value;
         const aprendizaje = f.aprendizaje.value;
-        const archivo = f.imagen.files[0];
+        const file = f.imagen.files[0];
 
         const reader = new FileReader();
         reader.onloadend = () => {
-          const actualizadas = clases.map(c =>
-            c === clase ? { ...c, tema, asistentes: niños, comportamiento, aprendizaje, imagen: reader.result } : c
+          const actualizadas = clases.map(cl =>
+            cl === c ? { ...cl, tema, asistentes, comportamiento, aprendizaje, imagen: reader.result } : cl
           );
           setClases(actualizadas); guardar("clases", actualizadas);
           alert("Clase registrada");
           f.reset();
         };
-
-        if (archivo) reader.readAsDataURL(archivo);
+        if (file) reader.readAsDataURL(file);
+        else {
+          // Si no hay imagen, guardar igual
+          const actualizadas = clases.map(cl =>
+            cl === c ? { ...cl, tema, asistentes, comportamiento, aprendizaje } : cl
+          );
+          setClases(actualizadas); guardar("clases", actualizadas);
+          alert("Clase registrada");
+          f.reset();
+        }
       };
 
       if (!user) {
         return (
           <div className="container">
-            <h2>Ingreso a CDR</h2>
-            <form onSubmit={registrar}>
-              <h3>Registrarse</h3>
+            <h2>CDR - Ingreso</h2>
+            <form onSubmit={handleRegister}>
+              <h3>Registro</h3>
               <input name="user" placeholder="Usuario" required />
               <input name="pass" type="password" placeholder="Contraseña" required />
               <select name="role">
@@ -123,8 +120,7 @@
               </select>
               <button>Registrar</button>
             </form>
-
-            <form onSubmit={login}>
+            <form onSubmit={handleLogin}>
               <h3>Iniciar sesión</h3>
               <input name="user" placeholder="Usuario" required />
               <input name="pass" type="password" placeholder="Contraseña" required />
@@ -137,13 +133,13 @@
       return (
         <div className="container">
           <div className="row">
-            <h2>Bienvenido, {user.user} ({user.role})</h2>
+            <h2>{user.role === "maestro" ? "Panel del Maestro" : "Panel del Líder"}</h2>
             <button onClick={logout}>Cerrar sesión</button>
           </div>
 
           {user.role === "lider" ? (
             <>
-              <h3>Asignar nueva clase</h3>
+              <h3>Asignar clase</h3>
               <form onSubmit={asignarClase}>
                 <input name="fecha" type="date" required />
                 <input name="encargado" placeholder="Encargado" required />
@@ -159,38 +155,31 @@
               {clases.map((c, i) => (
                 <div key={i} className="card">
                   <strong>{c.fecha}</strong><br />
-                  Edad: {c.edad}<br />
+                  Grupo: {c.edad}<br />
                   Encargado: {c.encargado}<br />
                   Asistente: {c.asistente}<br />
-                  Tema: {c.tema || "(sin registrar)"}<br />
-                  Asistentes: {c.asistentes.length}<br />
-                  {c.imagen && <img src={c.imagen} className="small-img" alt="foto" />}
+                  Tema: {c.tema || "No registrado"}<br />
+                  Asistentes: {c.asistentes.join(", ")}<br />
+                  Comportamiento: {c.comportamiento}<br />
+                  Aprendizaje: {c.aprendizaje}<br />
+                  {c.imagen && <img src={c.imagen} className="small-img" alt="Clase" />}
                 </div>
               ))}
             </>
           ) : (
             <>
-              <h3>Mis clases asignadas</h3>
+              <h3>Registrar clases asignadas</h3>
               {clases.filter(c => c.encargado === user.user && c.edad === user.edad).map((c, i) => (
                 <div key={i} className="card">
-                  <strong>{c.fecha}</strong>
+                  <strong>{c.fecha}</strong> — {c.tema ? `Tema: ${c.tema}` : "Sin tema"}
                   <form onSubmit={e => { e.preventDefault(); registrarClase(c, e.target); }}>
                     <input name="tema" placeholder="Tema impartido" required />
-                    <input name="niños" placeholder="Nombres de los niños (separados por coma)" required />
+                    <input name="ninos" placeholder="Nombres de niños (separados por coma)" required />
                     <input name="comportamiento" placeholder="Comportamiento" />
                     <input name="aprendizaje" placeholder="Aprendizaje" />
                     <input name="imagen" type="file" accept="image/*" />
-                    <button>Registrar clase</button>
+                    <button>Guardar clase</button>
                   </form>
-                  {c.tema && (
-                    <div>
-                      <strong>Tema registrado:</strong> {c.tema}<br />
-                      Asistieron: {c.asistentes.join(", ")}<br />
-                      Comportamiento: {c.comportamiento}<br />
-                      Aprendizaje: {c.aprendizaje}<br />
-                      {c.imagen && <img src={c.imagen} className="small-img" alt="foto" />}
-                    </div>
-                  )}
                 </div>
               ))}
             </>
@@ -199,7 +188,7 @@
       );
     };
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    ReactDOM.render(<App />, document.getElementById("root"));
   </script>
 </body>
 </html>
